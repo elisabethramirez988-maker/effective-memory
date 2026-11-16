@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca Escolar - Lee • Aprende • Crece</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- PANTALLA DE INICIO (SPLASH SCREEN) -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="logo-card-splash">
+                <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png'" alt="Logo Biblioteca">
+            </div>
+            <h1 class="splash-title">Biblioteca Escolar</h1>
+            <p class="splash-subtitle">Lee • Aprende • Crece</p>
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <p class="splash-loading-text">Cargando biblioteca...</p>
+        </div>
+        <span class="splash-badge">EDICIÓN ESCOLAR</span>
+    </div>
+
+    <!-- NOTIFICACIÓN EN VIVO -->
+    <div id="alerta-actualizacion" class="alerta-actualizacion oculto">
+        <span id="texto-alerta">🔔 Actualización en vivo...</span>
+        <button onclick="cerrarAlerta()">&times;</button>
+    </div>
+
+    <!-- BARRA SUPERIOR -->
+    <header class="top-header">
+        <div class="brand-mini" onclick="irInicio()">
+            <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2232/2232688.png'" alt="Logo">
+            <span>Biblioteca Escolar</span>
+        </div>
+        <div class="search-pill">
+            <span>🔍</span>
+            <input type="text" id="buscar-libro" placeholder="Buscar por título, autor o materia...">
+        </div>
+        <button class="btn-compartir" onclick="compartirPagina()" title="Compartir página">🔗 Compartir</button>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main id="app-main" class="app-main">
+
+        <!-- VISTA ESTUDIANTE -->
+        <section id="vista-estudiante" class="vista active">
+            <div class="categorias-tabs" id="categorias-tabs">
+                <button class="cat-tab active" data-cat="">Todos</button>
+                <button class="cat-tab" data-cat="Matemáticas">Matemáticas</button>
+                <button class="cat-tab" data-cat="Novela">Novelas</button>
+                <button class="cat-tab" data-cat="Manga">Mangas</button>
+                <button class="cat-tab" data-cat="Comic">Cómics</button>
+                <button class="cat-tab" data-cat="Historia">Historia</button>
+                <button class="cat-tab" data-cat="Biblia">Biblias</button>
+                <button class="cat-tab" data-cat="Biología">Biología</button>
+                <button class="cat-tab" data-cat="Química">Química</button>
+                <button class="cat-tab" data-cat="Lengua Española">Lengua Española</button>
+            </div>
+
+            <div class="seccion-catalogo">
+                <div class="seccion-titulo">
+                    <h2>🏆 Destacados del Momento</h2>
+                    <span class="sub-info">Toca cualquier libro para ver detalles</span>
+                </div>
+                <div id="grid-destacados" class="libros-grid"></div>
+            </div>
+
+            <div class="seccion-catalogo">
+                <div class="seccion-titulo">
+                    <h2>📚 Catálogo Escolar Completo</h2>
+                </div>
+                <div id="grid-todos" class="libros-grid"></div>
+            </div>
+        </section>
+
+        <!-- VISTA MI LISTA -->
+        <section id="vista-mi-lista" class="vista">
+            <div class="card-panel">
+                <h2>🎒 Libros Seleccionados para Préstamo</h2>
+                <p class="info-pill">Préstamo gratuito por <strong>6 días</strong>. Se te enviará un recordatorio 2 días antes.</p>
+                <div id="contenedor-seleccionados" class="lista-seleccion-cards"></div>
+                <div id="aviso-vacio" class="estado-vacio">
+                    <p>Aún no has seleccionado ningún libro. Explora el catálogo y toca un libro para agregarlo.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA LOGIN ADMINISTRADOR (CONTRASEÑA SEGURA) -->
+        <section id="vista-login-admin" class="vista">
+            <div class="card-panel login-box">
+                <div class="lock-icon">🔒</div>
+                <h2>Área Restringida - Administrador</h2>
+                <p>Ingresa tu contraseña de acceso para gestionar registros.</p>
+                <form id="form-login-admin" autocomplete="off">
+                    <input type="password" id="admin-password" placeholder="Ingresa la contraseña" autocomplete="new-password" required>
+                    <button type="submit" class="btn-principal">Acceder al Panel</button>
+                </form>
+                <p id="login-error" class="error-texto"></p>
+            </div>
+        </section>
+
+        <!-- VISTA PANEL ADMINISTRADOR -->
+        <section id="vista-panel-admin" class="vista">
+            <div class="admin-topbar">
+                <h2>⚙️ Panel de Control y Registros</h2>
+                <div class="admin-actions">
+                    <button onclick="exportarWord()" class="btn-export">📄 Word</button>
+                    <button onclick="exportarExcel()" class="btn-export">📊 Excel</button>
+                    <button onclick="exportarPDF()" class="btn-export">📕 PDF</button>
+                    <button onclick="exportarRespaldo()" class="btn-dorado">📥 Respaldo</button>
+                    <label class="btn-dorado upload-label">
+                        📤 Importar <input type="file" id="input-importar" accept=".json" onchange="importarRespaldo(event)" hidden>
+                    </label>
+                    <button id="btn-enviar-recordatorios" class="btn-dorado">📧 Alertas</button>
+                    <button id="btn-cerrar-sesion" class="btn-gris">Salir</button>
+                </div>
+            </div>
+
+            <div class="admin-grid">
+                <!-- Registrar Nuevo Libro -->
+                <div class="card-panel">
+                    <h3>➕ Registrar Nuevo Libro</h3>
+                    <form id="form-nuevo-libro">
+                        <label>Título del libro:</label>
+                        <input type="text" id="libro-titulo" placeholder="Ej: Álgebra Simplificada" required>
+
+                        <label>Autor:</label>
+                        <input type="text" id="libro-autor" placeholder="Ej: CONAMAT" required>
+
+                        <label>Clasificación / Sección:</label>
+                        <select id="libro-categoria" required>
+                            <option value="Matemáticas">Matemáticas (Ej: Álgebra, Cálculo)</option>
+                            <option value="Novela">Novela</option>
+                            <option value="Manga">Manga</option>
+                            <option value="Comic">Cómic</option>
+                            <option value="Historia">Historia</option>
+                            <option value="Biblia">Biblia</option>
+                            <option value="Biología">Biología</option>
+                            <option value="Química">Química</option>
+                            <option value="Lengua Española">Lengua Española</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+
+                        <label>Descripción / Sinopsis:</label>
+                        <textarea id="libro-descripcion" rows="3" placeholder="Breve resumen del libro..." required></textarea>
+
+                        <label>Foto de portada:</label>
+                        <input type="file" id="libro-foto-archivo" accept="image/*" required>
+                        <img id="preview-foto" class="preview-portada oculto" alt="Vista previa">
+
+                        <button type="submit" class="btn-principal">Guardar Libro y Notificar</button>
+                    </form>
+                </div>
+
+                <!-- Registrar Préstamo -->
+                <div class="card-panel">
+                    <h3>📝 Registrar Préstamo (Estudiante)</h3>
+                    <form id="form-nuevo-prestamo">
+                        <label>Nombre del estudiante:</label>
+                        <input type="text" id="est-nombre" required>
+
+                        <label>Correo electrónico (Aviso 2 días antes):</label>
+                        <input type="email" id="est-correo" placeholder="estudiante@escuela.edu" required>
+
+                        <label>Libros a retirar (Ctrl + Clic para varios):</label>
+                        <select id="est-libros" multiple required></select>
+
+                        <label>Grado y curso:</label>
+                        <input type="text" id="est-grado" placeholder="Ej: 4to Secundaria B" required>
+
+                        <label>Maestro encargado:</label>
+                        <input type="text" id="est-maestro" placeholder="Profesor responsable" required>
+
+                        <div class="fechas-editables-grid">
+                            <div>
+                                <label>📅 Fecha de Préstamo:</label>
+                                <input type="date" id="input-fecha-prestamo" required>
+                            </div>
+                            <div>
+                                <label>⏰ Fecha de Entrega:</label>
+                                <input type="date" id="input-fecha-entrega" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-principal">Completar Registro</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabla de Préstamos Vigentes -->
+            <div class="card-panel">
+                <h3>📋 Historial de Préstamos Activos</h3>
+                <div class="table-wrap">
+                    <table id="tabla-prestamos">
+                        <thead>
+                            <tr>
+                                <th>Estudiante</th>
+                                <th>Curso / Maestro</th>
+                                <th>Libros</th>
+                                <th>Préstamo</th>
+                                <th>Entrega</th>
+                                <th>Aviso Correo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DETALLE LIBRO -->
+    <div id="modal-detalle-libro" class="modal-overlay oculto">
+        <div class="concepto-card">
+            <button class="close-modal" onclick="cerrarModalLibro()">&times;</button>
+            <div class="concepto-img-wrap">
+                <img id="modal-img" src="" alt="Portada">
+                <span id="modal-cat-badge" class="concepto-badge">Categoría</span>
+            </div>
+            <div class="concepto-body">
+                <h2 id="modal-titulo">Título</h2>
+                <p id="modal-autor" class="concepto-autor">Autor</p>
+                <p id="modal-descripcion" class="concepto-desc">Descripción...</p>
+                <div class="concepto-estado" id="modal-estado-texto">Disponible</div>
+                <button id="modal-btn-elegir" class="btn-concepto">SELECCIONAR LIBRO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR FECHAS -->
+    <div id="modal-editar-fechas" class="modal-overlay oculto">
+        <div class="concepto-card" style="padding: 1.5rem;">
+            <button class="close-modal" onclick="cerrarModalEditarFechas()">&times;</button>
+            <h3 style="margin-top:0; color: var(--color-principal);">✏️ Editar Fechas del Préstamo</h3>
+            <p id="edit-estudiante-nombre" style="font-weight: 700; color: #64748b; margin-bottom: 1rem;"></p>
+            <input type="hidden" id="edit-prestamo-id">
+            
+            <label>📅 Fecha en que se llevó los libros:</label>
+            <input type="date" id="edit-fecha-prestamo" required>
+
+            <label>⏰ Fecha de entrega:</label>
+            <input type="date" id="edit-fecha-entrega" required>
+
+            <button onclick="guardarEdicionFechas()" class="btn-principal" style="margin-top: 0.5rem;">Guardar Nuevas Fechas</button>
+        </div>
+    </div>
+
+    <!-- NAVEGACIÓN INFERIOR -->
+    <nav class="bottom-nav">
+        <button class="bnav-item active" data-target="vista-estudiante">
+            <span class="bnav-icon">🏠</span>
+            <span>Inicio</span>
+        </button>
+        <button class="bnav-item" data-target="vista-mi-lista">
+            <span class="bnav-icon">🎒</span>
+            <span>Mi Lista <b id="badge-contador" class="contador-pill oculto">0</b></span>
+        </button>
+        <button class="bnav-item" id="nav-admin-btn" data-target="vista-login-admin">
+            <span class="bnav-icon">🔐</span>
+            <span>Admin</span>
+        </button>
+    </nav>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
